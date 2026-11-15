@@ -1,5 +1,6 @@
 package com.salareuniones.reserva.domain;
 
+import com.salareuniones.reserva.domain.errors.ReservaYaCanceladaException;
 import com.salareuniones.sala.domain.Sala;
 import com.salareuniones.shared.domain.BaseEntity;
 import jakarta.persistence.Column;

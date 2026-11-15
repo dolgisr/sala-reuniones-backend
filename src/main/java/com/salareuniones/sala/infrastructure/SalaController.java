@@ -2,14 +2,15 @@ package com.salareuniones.sala.infrastructure;
 
 import com.salareuniones.sala.application.SalaService;
 import com.salareuniones.sala.domain.Sala;
+import com.salareuniones.shared.infrastructure.http.OpenApiConfig;
+import com.salareuniones.shared.infrastructure.http.Pagination;
 import com.salareuniones.shared.infrastructure.http.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,14 +35,14 @@ public class SalaController {
 
     @Operation(summary = "Lista las salas de forma paginada")
     @GetMapping
-    public PaginatedResponse<SalaDto> listar(
+    public PaginatedResponse<SalaResponse> listar(
             @ParameterObject @PageableDefault(size = 20)
             Pageable pageable) {
-        Pageable porNombre = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("nombre"));
-        return PaginatedResponse.of(salaService.findAll(porNombre).map(salaMapper::toDto));
+        return PaginatedResponse.of(salaService.findAll(Pagination.withSort(pageable, "nombre")).map(salaMapper::toDto));
     }
 
     @Operation(summary = "Crea una sala")
+    @SecurityRequirement(name = OpenApiConfig.BEARER)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void crear(@Valid @RequestBody CrearSalaRequest request) {

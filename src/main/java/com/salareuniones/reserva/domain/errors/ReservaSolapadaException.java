@@ -1,6 +1,6 @@
-package com.salareuniones.reserva.domain;
+package com.salareuniones.reserva.domain.errors;
 
-import com.salareuniones.shared.domain.ConflictoException;
+import com.salareuniones.shared.domain.errors.ConflictoException;
 
 public class ReservaSolapadaException extends ConflictoException {
 

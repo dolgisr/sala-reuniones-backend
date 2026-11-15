@@ -4,15 +4,16 @@ import com.salareuniones.reserva.application.ReservaService;
 import com.salareuniones.reserva.domain.Reserva;
 import com.salareuniones.sala.application.SalaService;
 import com.salareuniones.sala.domain.Sala;
+import com.salareuniones.shared.infrastructure.http.OpenApiConfig;
+import com.salareuniones.shared.infrastructure.http.Pagination;
 import com.salareuniones.shared.infrastructure.http.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,16 +42,17 @@ public class ReservaController {
 
     @Operation(summary = "Lista las reservas de una sala en una fecha")
     @GetMapping
-    public PaginatedResponse<ReservaDto> listar(
+    public PaginatedResponse<ReservaResponse> listar(
             @ParameterObject @Valid BuscarReservasRequest request,
             @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
         // "id" desempata reservas que empiezan a la misma hora, para que el orden sea estable entre páginas
-        Pageable porInicio = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("inicio", "id"));
+        Pageable porInicio = Pagination.withSort(pageable, "inicio", "id");
         return PaginatedResponse.of(
                 reservaService.buscar(request.salaId(), request.fecha(), porInicio).map(reservaMapper::toDto));
     }
 
     @Operation(summary = "Crea una reserva; 409 si la sala ya está ocupada en ese horario")
+    @SecurityRequirement(name = OpenApiConfig.BEARER)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void crear(@Valid @RequestBody CrearReservaRequest request) {
@@ -59,6 +61,7 @@ public class ReservaController {
     }
 
     @Operation(summary = "Cancela una reserva; el horario queda libre. 409 si ya estaba cancelada")
+    @SecurityRequirement(name = OpenApiConfig.BEARER)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelar(@PathVariable UUID id) {

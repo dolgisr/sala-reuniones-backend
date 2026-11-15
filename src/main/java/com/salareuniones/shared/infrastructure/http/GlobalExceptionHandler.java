@@ -2,18 +2,20 @@ package com.salareuniones.shared.infrastructure.http;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.salareuniones.shared.domain.ConflictoException;
-import com.salareuniones.shared.domain.EntidadNoEncontradaException;
+import com.salareuniones.shared.domain.errors.ConflictoException;
+import com.salareuniones.shared.domain.errors.EntidadNoEncontradaException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -29,9 +32,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
     }
 
+    // Login con usuario o contraseña incorrectos; el mensaje no dice cuál de los dos falló
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleCredenciales(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Usuario o contraseña incorrectos"));
+    }
+
     @ExceptionHandler(ConflictoException.class)
     public ResponseEntity<ErrorResponse> handleConflicto(ConflictoException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    // Cualquier error no previsto: 500 con mensaje genérico; el detalle solo queda en el log
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleInesperado(Exception ex) {
+        log.error("Error no controlado", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Error interno del servidor"));
     }
 
     @Override
@@ -40,10 +57,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> errors = new LinkedHashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             // Un valor que no se pudo convertir (UUID o fecha mal escritos) trae un mensaje técnico de Spring
-            String message = error.isBindingFailure() ? "el formato no es válido" : error.getDefaultMessage();
+            String message = error.isBindingFailure() ? "El formato no es válido" : error.getDefaultMessage();
             errors.putIfAbsent(error.getField(), message);
         }
-        return ResponseEntity.badRequest().body(new ErrorResponse("la petición tiene campos inválidos", errors));
+        return ResponseEntity.badRequest().body(new ErrorResponse("La petición tiene campos inválidos", errors));
     }
 
     // Jackson falla al leer el cuerpo antes de validar: un valor con formato incorrecto o un JSON roto
@@ -56,9 +73,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     .filter(Objects::nonNull)
                     .collect(Collectors.joining("."));
             return ResponseEntity.badRequest().body(new ErrorResponse(
-                    "la petición tiene campos inválidos", Map.of(field, "el formato no es válido")));
+                    "La petición tiene campos inválidos", Map.of(field, "El formato no es válido")));
         }
-        return ResponseEntity.badRequest().body(new ErrorResponse("el cuerpo de la petición no es un JSON válido"));
+        return ResponseEntity.badRequest().body(new ErrorResponse("El cuerpo de la petición no es un JSON válido"));
     }
 
     @Override

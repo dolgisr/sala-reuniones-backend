@@ -5,10 +5,10 @@ import com.salareuniones.shared.infrastructure.http.BaseMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SalaMapper implements BaseMapper<Sala, SalaDto> {
+public class SalaMapper implements BaseMapper<Sala, SalaResponse> {
 
     @Override
-    public SalaDto toDto(Sala sala) {
-        return new SalaDto(sala.getId(), sala.getNombre());
+    public SalaResponse toDto(Sala sala) {
+        return new SalaResponse(sala.getId(), sala.getNombre());
     }
 }

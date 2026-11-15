@@ -3,8 +3,8 @@ package com.salareuniones.reserva.application;
 import com.salareuniones.reserva.domain.EstadoReserva;
 import com.salareuniones.reserva.domain.Reserva;
 import com.salareuniones.reserva.domain.ReservaRepository;
-import com.salareuniones.reserva.domain.ReservaSolapadaException;
-import com.salareuniones.sala.domain.SalaRepository;
+import com.salareuniones.reserva.domain.errors.ReservaSolapadaException;
+import com.salareuniones.sala.application.SalaService;
 import com.salareuniones.shared.application.BaseService;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -16,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReservaService extends BaseService<Reserva, ReservaRepository> {
 
-    private final SalaRepository salaRepository;
+    private final SalaService salaService;
 
-    public ReservaService(ReservaRepository repository, SalaRepository salaRepository) {
-        super(repository, "Reserva");
-        this.salaRepository = salaRepository;
+    public ReservaService(ReservaRepository repository, SalaService salaService) {
+        super(repository);
+        this.salaService = salaService;
     }
 
     @Transactional(readOnly = true)
@@ -30,7 +30,8 @@ public class ReservaService extends BaseService<Reserva, ReservaRepository> {
 
     @Transactional
     public void cancelar(UUID id) {
-        Reserva reserva = findById(id);
+        Reserva reserva = repository.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
         reserva.cancelar();
         save(reserva);
     }
@@ -39,7 +40,7 @@ public class ReservaService extends BaseService<Reserva, ReservaRepository> {
     protected void validateCreate(Reserva reserva) {
         UUID salaId = reserva.getSala().getId();
         // Bloquea la sala para que dos reservas simultáneas no pasen ambas la comprobación
-        salaRepository.findByIdForUpdate(salaId);
+        salaService.lockById(salaId);
         if (repository.existeSolapamiento(salaId, reserva.getInicio(), reserva.getFin(), EstadoReserva.ACTIVA)) {
             throw new ReservaSolapadaException();
         }

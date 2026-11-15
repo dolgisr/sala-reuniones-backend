@@ -4,7 +4,7 @@ import com.salareuniones.reserva.domain.EstadoReserva;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ReservaDto(
+public record ReservaResponse(
         UUID id,
         UUID salaId,
         String responsable,

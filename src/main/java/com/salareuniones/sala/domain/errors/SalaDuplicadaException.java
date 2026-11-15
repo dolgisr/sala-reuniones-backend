@@ -1,6 +1,6 @@
-package com.salareuniones.sala.domain;
+package com.salareuniones.sala.domain.errors;
 
-import com.salareuniones.shared.domain.ConflictoException;
+import com.salareuniones.shared.domain.errors.ConflictoException;
 
 public class SalaDuplicadaException extends ConflictoException {
 

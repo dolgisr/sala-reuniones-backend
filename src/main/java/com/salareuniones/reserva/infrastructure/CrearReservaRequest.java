@@ -10,26 +10,26 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record CrearReservaRequest(
-        @NotNull(message = "la sala es obligatoria")
+        @NotNull(message = "La sala es obligatoria")
         @Schema(example = "6f37deab-3688-4735-8fae-1a219edcb227")
         UUID salaId,
 
-        @NotBlank(message = "el responsable es obligatorio")
-        @Size(max = 100, message = "el responsable no puede superar los 100 caracteres")
+        @NotBlank(message = "El responsable es obligatorio")
+        @Size(max = 100, message = "El responsable no puede superar los 100 caracteres")
         @Schema(example = "Ana García")
         String responsable,
 
-        @NotNull(message = "el inicio es obligatorio")
+        @NotNull(message = "El inicio es obligatorio")
         @Schema(example = "2026-11-16T10:00:00")
         LocalDateTime inicio,
 
-        @NotNull(message = "el fin es obligatorio")
+        @NotNull(message = "El fin es obligatorio")
         @Schema(example = "2026-11-16T11:00:00")
         LocalDateTime fin
 ) {
 
     @JsonIgnore
-    @AssertTrue(message = "el fin debe ser posterior al inicio")
+    @AssertTrue(message = "El fin debe ser posterior al inicio")
     public boolean isRangoValido() {
         return inicio == null || fin == null || fin.isAfter(inicio);
     }

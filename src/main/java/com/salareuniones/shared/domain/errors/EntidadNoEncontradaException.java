@@ -1,4 +1,4 @@
-package com.salareuniones.shared.domain;
+package com.salareuniones.shared.domain.errors;
 
 import java.util.UUID;
 

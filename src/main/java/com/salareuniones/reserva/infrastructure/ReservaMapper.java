@@ -5,12 +5,12 @@ import com.salareuniones.shared.infrastructure.http.BaseMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ReservaMapper implements BaseMapper<Reserva, ReservaDto> {
+public class ReservaMapper implements BaseMapper<Reserva, ReservaResponse> {
 
     // Leer el id de la sala no carga la sala: Hibernate lo tiene en el proxy de la relación lazy
     @Override
-    public ReservaDto toDto(Reserva reserva) {
-        return new ReservaDto(
+    public ReservaResponse toDto(Reserva reserva) {
+        return new ReservaResponse(
                 reserva.getId(),
                 reserva.getSala().getId(),
                 reserva.getResponsable(),

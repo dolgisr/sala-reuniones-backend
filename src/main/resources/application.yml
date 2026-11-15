@@ -20,3 +20,12 @@ spring:
       pageable:
         # Evita que un cliente pida páginas enormes (size=100000)
         max-page-size: 100
+
+app:
+  security:
+    # Credenciales fijas del único usuario de la API (prueba técnica, sin tabla de usuarios)
+    username: ${APP_USERNAME:admin}
+    password: ${APP_PASSWORD:admin123}
+    # Clave HS256: mínimo 32 caracteres. En un entorno real debe venir de un secreto, no de este valor
+    jwt-secret: ${JWT_SECRET:cambia-este-secreto-de-desarrollo-de-32-caracteres}
+    jwt-expiration: ${JWT_EXPIRATION:1h}
