@@ -15,3 +15,8 @@ spring:
     open-in-view: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  data:
+    web:
+      pageable:
+        # Evita que un cliente pida páginas enormes (size=100000)
+        max-page-size: 100

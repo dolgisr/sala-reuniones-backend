@@ -45,9 +45,8 @@ public class Reserva extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "estado", nullable = false,
-    default:EstadoReserva.ACTIVA)
-    private EstadoReserva estado;
+    @Column(name = "estado", nullable = false)
+    private EstadoReserva estado = EstadoReserva.ACTIVA;
 
     private Reserva(UUID id, Sala sala, String responsable, LocalDateTime inicio, LocalDateTime fin) {
         super(id);
@@ -55,7 +54,6 @@ public class Reserva extends BaseEntity {
         this.responsable = responsable;
         this.inicio = inicio;
         this.fin = fin;
-        this.estado = EstadoReserva.ACTIVA;
     }
 
     public static Reserva create(Sala sala, String responsable, LocalDateTime inicio, LocalDateTime fin) {
