@@ -1,4 +1,4 @@
-package com.salareuniones.reserva.infrastructure;
+package com.salareuniones.reserva.infrastructure.http;
 
 import com.salareuniones.reserva.domain.Reserva;
 import com.salareuniones.shared.infrastructure.http.BaseMapper;

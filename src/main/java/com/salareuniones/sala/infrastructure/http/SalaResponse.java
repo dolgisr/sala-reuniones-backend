@@ -1,4 +1,4 @@
-package com.salareuniones.sala.infrastructure;
+package com.salareuniones.sala.infrastructure.http;
 
 import java.util.UUID;
 

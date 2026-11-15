@@ -1,5 +1,7 @@
-package com.salareuniones.auth.infrastructure;
+package com.salareuniones.auth.infrastructure.http;
 
+import com.salareuniones.auth.application.AuthService;
+import com.salareuniones.auth.application.Token;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,7 +24,7 @@ public class AuthController {
     @Operation(summary = "Devuelve un JWT para usar en los endpoints que crean o cancelan")
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-        String token = authService.login(request.username(), request.password());
-        return new TokenResponse(token, "Bearer", authService.expiresInSeconds());
+        Token token = authService.login(request.username(), request.password());
+        return new TokenResponse(token.value(), "Bearer", token.expiresInSeconds());
     }
 }

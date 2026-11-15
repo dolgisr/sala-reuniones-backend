@@ -1,4 +1,4 @@
-package com.salareuniones.reserva.infrastructure;
+package com.salareuniones.reserva.infrastructure.http;
 
 import com.salareuniones.reserva.domain.EstadoReserva;
 import java.time.LocalDateTime;

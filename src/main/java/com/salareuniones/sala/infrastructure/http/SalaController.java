@@ -1,4 +1,4 @@
-package com.salareuniones.sala.infrastructure;
+package com.salareuniones.sala.infrastructure.http;
 
 import com.salareuniones.sala.application.SalaService;
 import com.salareuniones.sala.domain.Sala;
