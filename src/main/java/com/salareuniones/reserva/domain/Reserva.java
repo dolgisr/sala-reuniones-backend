@@ -59,4 +59,11 @@ public class Reserva extends BaseEntity {
     public static Reserva create(Sala sala, String responsable, LocalDateTime inicio, LocalDateTime fin) {
         return new Reserva(UUID.randomUUID(), sala, responsable, inicio, fin);
     }
+
+    public void cancelar() {
+        if (estado == EstadoReserva.CANCELADA) {
+            throw new ReservaYaCanceladaException();
+        }
+        estado = EstadoReserva.CANCELADA;
+    }
 }
