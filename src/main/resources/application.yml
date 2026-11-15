@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: sala-reuniones-backend
+  # Reutiliza el mismo .env que lee docker compose, así la aplicación y la base siempre coinciden
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME:sala_reuniones}
+    username: ${DB_USER:sala}
+    password: ${DB_PASSWORD:sala}
+  jpa:
+    # El esquema lo gestiona Liquibase; Hibernate solo comprueba que las entidades coincidan con él
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml

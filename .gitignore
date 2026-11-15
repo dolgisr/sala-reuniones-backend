@@ -1,0 +1,13 @@
+# Configuración local
+.env
+
+# Build
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Sistema operativo
+.DS_Store
