@@ -39,10 +39,10 @@ Todo se lee del `.env`, que comparten la aplicación y `docker compose`. Si no e
 ./mvnw test                 # necesita Docker en marcha
 ```
 
-Hay 19 tests:
+Hay 22 tests:
 
 - **Unitarios**, sin Spring ni base de datos: reglas de la reserva (`ReservaTest`) y de los servicios con repositorios simulados (`ReservaServiceTest`, `SalaServiceTest`).
-- **De integración**, con MockMvc contra un PostgreSQL real que Testcontainers levanta en Docker (`SalasIntegrationTest`, `ReservasIntegrationTest`). Recorren la API completa: autenticación, 409 y sus bordes, errores 400 por campo, filtros, orden, paginación y cancelación. No usan la base de desarrollo.
+- **De integración**, con MockMvc contra un PostgreSQL real que Testcontainers levanta en Docker (`SalasIntegrationTest`, `ReservasIntegrationTest`, `SeguridadIntegrationTest`). Recorren la API completa: autenticación y token caducado, 409 y sus bordes, errores 400 por campo, filtros por sala y fecha, orden, paginación y cancelación. Incluyen dos pruebas de concurrencia: cinco reservas simultáneas para el mismo horario y cinco cancelaciones simultáneas de la misma reserva, de las que solo una pasa en cada caso. No usan la base de desarrollo.
 
 ## Uso de la API
 

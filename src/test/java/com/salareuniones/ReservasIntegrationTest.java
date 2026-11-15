@@ -1,7 +1,10 @@
 package com.salareuniones;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,38 +12,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 class ReservasIntegrationTest extends AbstractIntegrationTest {
-
-    @Test
-    void loginConCredencialesIncorrectasDevuelve401() throws Exception {
-        mvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"username": "test", "password": "mala"}
-                                """))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Usuario o contraseña incorrectos"));
-    }
-
-    @Test
-    void consultarEsLibrePeroCrearYCancelarExigenToken() throws Exception {
-        mvc.perform(get("/api/salas")).andExpect(status().isOk());
-
-        mvc.perform(post("/api/salas")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"nombre": "Sala sin token"}
-                                """))
-                .andExpect(status().isUnauthorized());
-
-        mvc.perform(delete("/api/reservas/00000000-0000-0000-0000-000000000000"))
-                .andExpect(status().isUnauthorized());
-    }
 
     @Test
     void reservarDevuelve409SiLaSalaEstaOcupadaYRespetaLosBordes() throws Exception {
@@ -93,13 +78,21 @@ class ReservasIntegrationTest extends AbstractIntegrationTest {
         // Cruza la medianoche: debe aparecer en los dos días
         reservar(salaId, "2030-02-01T23:00:00", "2030-02-02T01:00:00").andExpect(status().isCreated());
         reservar(salaId, "2030-02-03T10:00:00", "2030-02-03T11:00:00").andExpect(status().isCreated());
+        // Mismo día en otra sala: no debe aparecer al filtrar por la primera
+        String otraSala = crearSala("Sala Listado 2");
+        reservar(otraSala, "2030-02-01T10:00:00", "2030-02-01T11:00:00").andExpect(status().isCreated());
 
         // Sin token: la consulta es pública
         mvc.perform(get("/api/reservas").param("salaId", salaId).param("fecha", "2030-02-01"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.data[*].salaId").value(everyItem(is(salaId))))
                 .andExpect(jsonPath("$.data[*].inicio").value(contains(
                         "2030-02-01T09:00:00", "2030-02-01T12:00:00", "2030-02-01T23:00:00")));
+
+        mvc.perform(get("/api/reservas").param("salaId", otraSala).param("fecha", "2030-02-01"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.data[0].salaId").value(otraSala));
 
         mvc.perform(get("/api/reservas").param("salaId", salaId).param("fecha", "2030-02-02"))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -135,6 +128,56 @@ class ReservasIntegrationTest extends AbstractIntegrationTest {
         reservar(salaId, "2030-03-01T10:00:00", "2030-03-01T11:00:00").andExpect(status().isCreated());
         mvc.perform(get("/api/reservas").param("salaId", salaId).param("fecha", "2030-03-01"))
                 .andExpect(jsonPath("$.data[*].estado").value(containsInAnyOrder("ACTIVA", "CANCELADA")));
+    }
+
+    @Test
+    void cincoReservasSimultaneasParaElMismoHorarioSoloDejanPasarUna() throws Exception {
+        String salaId = crearSala("Sala Concurrencia");
+
+        List<Integer> codigos = enParalelo(5, () -> reservar(salaId, "2030-04-01T10:00:00", "2030-04-01T11:00:00")
+                .andReturn().getResponse().getStatus());
+
+        assertThat(codigos).filteredOn(codigo -> codigo == 201).hasSize(1);
+        assertThat(codigos).filteredOn(codigo -> codigo == 409).hasSize(4);
+        mvc.perform(get("/api/reservas").param("salaId", salaId).param("fecha", "2030-04-01"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void cincoCancelacionesSimultaneasDeLaMismaReservaSoloDejanPasarUna() throws Exception {
+        String salaId = crearSala("Sala Concurrencia Cancelación");
+        reservar(salaId, "2030-04-02T10:00:00", "2030-04-02T11:00:00").andExpect(status().isCreated());
+        String reservaId = idDeLaPrimeraReserva(salaId, "2030-04-02");
+
+        List<Integer> codigos = enParalelo(5, () -> mvc.perform(delete("/api/reservas/{id}", reservaId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andReturn().getResponse().getStatus());
+
+        assertThat(codigos).filteredOn(codigo -> codigo == 204).hasSize(1);
+        assertThat(codigos).filteredOn(codigo -> codigo == 409).hasSize(4);
+    }
+
+    /** Lanza la misma petición en varios hilos a la vez y devuelve el código HTTP de cada una. */
+    private List<Integer> enParalelo(int veces, Callable<Integer> peticion) throws Exception {
+        ExecutorService hilos = Executors.newFixedThreadPool(veces);
+        CountDownLatch salida = new CountDownLatch(1);
+        try {
+            List<Future<Integer>> resultados = new ArrayList<>();
+            for (int i = 0; i < veces; i++) {
+                resultados.add(hilos.submit(() -> {
+                    salida.await();   // todas esperan aquí y salen a la vez
+                    return peticion.call();
+                }));
+            }
+            salida.countDown();
+            List<Integer> codigos = new ArrayList<>();
+            for (Future<Integer> resultado : resultados) {
+                codigos.add(resultado.get(30, TimeUnit.SECONDS));
+            }
+            return codigos;
+        } finally {
+            hilos.shutdownNow();
+        }
     }
 
     private ResultActions reservar(String salaId, String inicio, String fin) throws Exception {

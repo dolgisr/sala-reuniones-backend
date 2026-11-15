@@ -66,7 +66,8 @@ public class SecurityConfig {
     // una consulta ni impedir volver a hacer login
     private static BearerTokenResolver bearerTokenResolver() {
         DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
-        return request -> HttpMethod.GET.matches(request.getMethod()) || LOGIN.equals(request.getServletPath())
+        return request -> HttpMethod.GET.matches(request.getMethod())
+                || request.getRequestURI().equals(request.getContextPath() + LOGIN)
                 ? null
                 : defaultResolver.resolve(request);
     }
